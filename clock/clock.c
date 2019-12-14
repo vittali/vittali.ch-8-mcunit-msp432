@@ -43,6 +43,8 @@
 #include <ti/sysbios/knl/Clock.h>
 
 #include <ti/drivers/Board.h>
+#include <ti/drivers/GPIO.h>
+#include "ti_drivers_config.h"
 
 Void clk0Fxn(UArg arg0);
 Void clk1Fxn(UArg arg0);
@@ -53,57 +55,47 @@ Clock_Handle clk2Handle;
 /*
  *  ======== main ========
  */
-int main()
-{
-    /* Construct BIOS Objects */
-    Clock_Params clkParams;
+int main(){
+  /* Construct BIOS Objects */
+  Clock_Params clkParams;
 
-    /* Call driver init functions */
-    Board_init();
+  /* Call driver init functions */
+  Board_init();
+  GPIO_init();
 
-    Clock_Params_init(&clkParams);
-    clkParams.period = 5000/Clock_tickPeriod;
-    clkParams.startFlag = TRUE;
+  Clock_Params_init(&clkParams);
+  clkParams.period = 1000 * 1000 / Clock_tickPeriod; // every sec
+  clkParams.startFlag = TRUE;
 
-    /* Construct a periodic Clock Instance */
-    Clock_construct(&clk0Struct, (Clock_FuncPtr)clk0Fxn,
-                    5000/Clock_tickPeriod, &clkParams);
+  UInt timeout = 1; // minimum timeout, the periodic clock won't start for timeout = 0;
+  /* Construct a periodic Clock Instance */
+  Clock_construct(&clk0Struct, (Clock_FuncPtr) clk0Fxn, 1, &clkParams);
 
-    clkParams.period = 0;
-    clkParams.startFlag = FALSE;
+  clkParams.period = 0;
+  clkParams.startFlag = FALSE;
+  timeout = 3000 * 1000 / Clock_tickPeriod; // one shot after three secs
+  /* Construct a one-shot Clock Instance */
+  Clock_construct(&clk1Struct, (Clock_FuncPtr) clk1Fxn, timeout, &clkParams);
 
-    /* Construct a one-shot Clock Instance */
-    Clock_construct(&clk1Struct, (Clock_FuncPtr)clk1Fxn,
-                    11000/Clock_tickPeriod, &clkParams);
+  clk2Handle = Clock_handle(&clk1Struct);
 
-    clk2Handle = Clock_handle(&clk1Struct);
+  Clock_start(clk2Handle);
 
-    Clock_start(clk2Handle);
-
-    BIOS_start();    /* does not return */
-    return(0);
+  BIOS_start(); /* does not return */
+  return (0);
 }
 
 /*
- *  ======== clk0Fxn =======
+ *  ======== clk0Fxn periodic =======
  */
-Void clk0Fxn(UArg arg0)
-{
-    UInt32 time;
-
-    time = Clock_getTicks();
-    System_printf("System time in clk0Fxn = %lu\n", (ULong)time);
+Void clk0Fxn(UArg arg0){
+  GPIO_toggle(CONFIG_LED_Red_GPIO);
 }
 
 /*
- *  ======== clk1Fxn =======
+ *  ======== clk1Fxn one shot =======
  */
-Void clk1Fxn(UArg arg0)
-{
-    UInt32 time;
+Void clk1Fxn(UArg arg0){
+  GPIO_toggle(CONFIG_LED_Green_GPIO);
 
-    time = Clock_getTicks();
-    System_printf("System time in clk1Fxn = %lu\n", (ULong)time);
-    System_printf("Calling BIOS_exit() from clk1Fxn\n");
-    BIOS_exit(0);
 }
