@@ -55,6 +55,7 @@ Clock_Handle clk2Handle;
 /*
  *  ======== main ========
  */
+uint16_t test_result = 0;
 int main(){
   /* Construct BIOS Objects */
   Clock_Params clkParams;
@@ -97,5 +98,5 @@ Void clk0Fxn(UArg arg0){
  */
 Void clk1Fxn(UArg arg0){
   GPIO_toggle(CONFIG_LED_Green_GPIO);
-
+  test_result = 1;
 }
